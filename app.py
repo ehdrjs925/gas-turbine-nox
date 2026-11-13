@@ -38,6 +38,11 @@ DESCRIPTIONS = {
     "CO": "일산화탄소 배출 농도(별도 측정 결과)",
     "NOX": "질소산화물 배출 농도(예측 목표)",
 }
+UNITS = {
+    "AT": "°C", "AP": "mbar", "AH": "%",
+    "AFDP": "mbar", "GTEP": "mbar", "TIT": "°C",
+    "TAT": "°C", "TEY": "MWh", "CDP": "mbar",
+}
 
 
 @st.cache_data(ttl=3600, show_spinner="연도별 CSV 파일 5개를 읽고 있습니다…")
@@ -102,6 +107,35 @@ def iqr_outlier_info(series):
     lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
     count = int(((values < lower) | (values > upper)).sum())
     return {"q1": q1, "q3": q3, "iqr": iqr, "lower": lower, "upper": upper, "count": count}
+
+
+def show_prediction_form(model, training_inputs):
+    st.subheader("운전 조건을 입력해 NOx 예측하기")
+    st.caption("처음 표시되는 수치는 학습 자료의 실제 관측 한 건입니다. 각 입력은 학습 자료에서 관측한 범위 안에서 바꿀 수 있습니다.")
+    example = training_inputs.iloc[len(training_inputs) // 2]
+    lower = training_inputs.min()
+    upper = training_inputs.max()
+    inputs = {}
+
+    with st.form("nox_prediction"):
+        columns = st.columns(3)
+        for index, feature in enumerate(FEATURES):
+            inputs[feature] = columns[index % 3].number_input(
+                f"{DESCRIPTIONS[feature]} · {feature} ({UNITS[feature]})",
+                min_value=float(lower[feature]),
+                max_value=float(upper[feature]),
+                value=float(example[feature]),
+                step=0.1,
+                format="%.6f",
+                key=f"predict_{feature}",
+            )
+        submitted = st.form_submit_button("NOx 농도 예측", type="primary")
+
+    if submitted:
+        row = pd.DataFrame([inputs], columns=FEATURES)
+        estimate = float(model.predict(row)[0])
+        st.metric("예상 NOx 배출 농도", f"{estimate:.2f} mg/m³")
+        st.caption("이 값은 입력 조건을 바탕으로 계산한 추정치입니다. 아래에서 평가 기간의 실제 예측 오차를 확인할 수 있습니다.")
 
 
 st.title("가스터빈 NOx 배출 데이터 탐색 및 예측")
@@ -303,11 +337,18 @@ with regression:
         width="stretch",
     )
 
+    if train_ready.empty:
+        st.warning("유효한 학습 자료가 있어야 모델을 학습할 수 있습니다.")
+    else:
+        training_inputs = train_ready[FEATURES]
+        model = LinearRegression()
+        model.fit(training_inputs, train_ready["NOX"])
+        show_prediction_form(model, training_inputs)
+
+    st.subheader("2014~2015년 예측 성능")
     if train_ready.empty or test_ready.empty:
         st.warning("유효한 학습 자료와 평가 자료가 모두 있어야 모델을 평가할 수 있습니다.")
     else:
-        model = LinearRegression()
-        model.fit(train_ready[FEATURES], train_ready["NOX"])
         actual = test_ready["NOX"]
         predicted = model.predict(test_ready[FEATURES])
 
