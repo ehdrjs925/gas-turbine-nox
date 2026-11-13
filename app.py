@@ -11,6 +11,7 @@ import plotly.express as px
 import streamlit as st
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
 st.set_page_config(
     page_title="가스터빈 NOx 탐색 및 예측",
     page_icon="📊",
@@ -188,7 +189,7 @@ with dist:
             labels={"NOX": "NOx 배출 농도 (mg/m³)", "count": "관측값 개수"},
             title=f"NOx 배출 농도 히스토그램 ({year_selection})",
         )
-        hist.update_layout(yaxis_title="관측값 개수", bargap=0.05) 
+        hist.update_layout(yaxis_title="관측값 개수", bargap=0.05)
         st.plotly_chart(hist, width="stretch")
 
         st.subheader("IQR 기준 이상치 탐색")
@@ -215,7 +216,8 @@ with relations:
     st.subheader("독립 변수와 NOx의 상관관계")
     st.caption("CO는 별도 배출 측정값이므로 초기 예측 모델의 독립 변수 후보에서 제외합니다.")
     correlation = df[FEATURES + ["NOX"]].corr(method="pearson")
-    heatmap = px.imshow(  correlation, zmin=-1, zmax=1,
+    heatmap = px.imshow(
+        correlation, zmin=-1, zmax=1,
         color_continuous_scale="RdBu_r", text_auto=".2f", aspect="auto",
         labels={"color": "상관계수"}, title=f"피어슨 상관계수 히트맵 ({year_selection})",
     )
@@ -241,7 +243,8 @@ with relations:
     scatter = df[[selected, "NOX", "year"]].dropna()
     if not scatter.empty:
         if len(scatter) > 4500:
-            scatter = scatter.sample(n=4500, random scatter = scatter.assign(연도=scatter["year"].astype(str))
+            scatter = scatter.sample(n=4500, random_state=42)
+        scatter = scatter.assign(연도=scatter["year"].astype(str))
         scatter_fig = px.scatter(
             scatter, x=selected, y="NOX", color="연도", opacity=0.5,
             title=f"{DESCRIPTIONS[selected]}와 NOx 배출 농도의 관계",
@@ -297,7 +300,8 @@ with regression:
             "결측값·무한값으로 제외한 행": [len(train) - len(train_ready), len(test) - len(test_ready)],
         }),
         hide_index=True,
-        width="stretch", )
+        width="stretch",
+    )
 
     if train_ready.empty or test_ready.empty:
         st.warning("유효한 학습 자료와 평가 자료가 모두 있어야 모델을 평가할 수 있습니다.")
@@ -346,3 +350,4 @@ with regression:
         fig.update_xaxes(range=axis_range)
         fig.update_yaxes(range=axis_range, scaleanchor="x", scaleratio=1)
         st.plotly_chart(fig, width="stretch")
+        st.caption("점선은 실제값과 예측값이 같은 위치입니다. 점선 아래는 과소 예측, 위는 과대 예측입니다.")
