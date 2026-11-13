@@ -97,8 +97,7 @@ def iqr_outlier_info(series):
     if values.empty:
         return None
     q1 = values.quantile(0.25)
-    q3 = values.quantile(0.75) if values.empty:
-
+    q3 = values.quantile(0.75)
     iqr = q3 - q1
     lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
     count = int(((values < lower) | (values > upper)).sum())
@@ -190,13 +189,12 @@ with dist:
             labels={"NOX": "NOx 배출 농도 (mg/m³)", "count": "관측값 개수"},
             title=f"NOx 배출 농도 히스토그램 ({year_selection})",
         )
-        hist.update_layout(yaxis_title="관측값 개수", bargap=0.05)
-        st.plotly_chart(hist, width="stretch")
+        hist.update_layout(yaxis_title="관측값 개수", bargap=0.05)   st.plotly_chart(hist, width="stretch")
 
         st.subheader("IQR 기준 이상치 탐색")
         o = iqr_outlier_info(df["NOX"])
         a, b, c = st.columns(3)
-           a.metric("Q1 (1사분위수)", f"{o['q1']:.2f}")
+        a.metric("Q1 (1사분위수)", f"{o['q1']:.2f}")
         b.metric("Q3 (3사분위수)", f"{o['q3']:.2f}")
         c.metric("IQR 기준 이상치", f"{o['count']:,}개")
         st.write(f"참고 범위: **{o['lower']:.2f} ~ {o['upper']:.2f} mg/m³** (Q1 − 1.5×IQR ~ Q3 + 1.5×IQR)")
@@ -217,8 +215,7 @@ with relations:
     st.subheader("독립 변수와 NOx의 상관관계")
     st.caption("CO는 별도 배출 측정값이므로 초기 예측 모델의 독립 변수 후보에서 제외합니다.")
     correlation = df[FEATURES + ["NOX"]].corr(method="pearson")
-    heatmap = px.imshow(
-        correlation, zmin=-1, zmax=1,
+    heatmap = px.imshow(  correlation, zmin=-1, zmax=1,
         color_continuous_scale="RdBu_r", text_auto=".2f", aspect="auto",
         labels={"color": "상관계수"}, title=f"피어슨 상관계수 히트맵 ({year_selection})",
     )
@@ -244,8 +241,7 @@ with relations:
     scatter = df[[selected, "NOX", "year"]].dropna()
     if not scatter.empty:
         if len(scatter) > 4500:
-            scatter = scatter.sample(n=4500, random_state=42)
-        scatter = scatter.assign(연도=scatter["year"].astype(str))
+            scatter = scatter.sample(n=4500, random scatter = scatter.assign(연도=scatter["year"].astype(str))
         scatter_fig = px.scatter(
             scatter, x=selected, y="NOX", color="연도", opacity=0.5,
             title=f"{DESCRIPTIONS[selected]}와 NOx 배출 농도의 관계",
@@ -297,12 +293,11 @@ with regression:
         pd.DataFrame({
             "용도": ["학습", "평가"],
             "기간": ["2011~2013년", "2014~2015년"],
-     "사용한 행": [len(train_ready), len(test_ready)],
+            "사용한 행": [len(train_ready), len(test_ready)],
             "결측값·무한값으로 제외한 행": [len(train) - len(train_ready), len(test) - len(test_ready)],
         }),
         hide_index=True,
-        width="stretch",
-    )
+        width="stretch", )
 
     if train_ready.empty or test_ready.empty:
         st.warning("유효한 학습 자료와 평가 자료가 모두 있어야 모델을 평가할 수 있습니다.")
