@@ -189,7 +189,8 @@ with dist:
             labels={"NOX": "NOx 배출 농도 (mg/m³)", "count": "관측값 개수"},
             title=f"NOx 배출 농도 히스토그램 ({year_selection})",
         )
-        hist.update_layout(yaxis_title="관측값 개수", bargap=0.05)   st.plotly_chart(hist, width="stretch")
+        hist.update_layout(yaxis_title="관측값 개수", bargap=0.05) 
+        st.plotly_chart(hist, width="stretch")
 
         st.subheader("IQR 기준 이상치 탐색")
         o = iqr_outlier_info(df["NOX"])
