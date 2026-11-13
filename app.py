@@ -11,7 +11,6 @@ import plotly.express as px
 import streamlit as st
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-
 st.set_page_config(
     page_title="가스터빈 NOx 탐색 및 예측",
     page_icon="📊",
